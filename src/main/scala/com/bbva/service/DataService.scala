@@ -31,21 +31,11 @@ case class Message(topic: String, id: String, message: String)
 
 case class SyncMessage(topic: String, id: String, message: String)
 
-case class DataService(system: ActorSystem)(implicit val config: Config, implicit val storageService: BagService) {
-
-  val defaultStructuredLogTopic = config.getString("application.default.kafka.structuredlogs.topic")
-  val defaultUnstructuredLogTopic = config.getString("application.default.kafka.unstructuredlogs.topic")
-  val defaultTraceabilityTopic = config.getString("application.default.kafka.traceabilities.topic")
-  val defaultParamPathTopic = config.getString("application.default.metadata.commonKeyName")
-  val configurationValuesBag = config.getString("application.default.metadata.configurationValuesObjectBag")
-  val inputApiTopicRelationKey = config.getString("application.default.metadata.inputApiTopicRelationKey")
-  val defaultParamPathTraceabilityTopic = "mike.traceability.sink."
-
-  // TODO Remove version form API (Need to configure NGINX to resolve this on headers)
+case class DataService(system: ActorSystem)(implicit val config: Config) {
 
   implicit val timeout = Timeout(5 seconds)
 
-  val router = system.actorOf(FromConfig.props(Props[ProducerActor]), "kafkaRouter")
+  val router = system.actorOf(FromConfig.props(Props[ProducerActor]), "mainRouter")
 
   val settings = CorsSettings.defaultSettings.copy(allowGenericHttpRequests = false)
 

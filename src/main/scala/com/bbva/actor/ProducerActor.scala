@@ -8,15 +8,12 @@ class ProducerActor extends Actor {
 
   private def logger = LoggerFactory.getLogger(this.getClass)
 
-
   override def receive: Receive = {
     case Message(topic, id, message) =>
       "OK"
-
     case SyncMessage(topic, id, message) =>
       "OK"
   }
-
 
   private def getConfiguration: Properties = {
 

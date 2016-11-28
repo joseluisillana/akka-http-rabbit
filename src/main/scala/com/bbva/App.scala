@@ -8,7 +8,6 @@ import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.bbva.service.DataService
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.duration._
 
 

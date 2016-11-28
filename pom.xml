@@ -7,7 +7,6 @@
     <groupId>com.bbva</groupId>
     <artifactId>http-rabbit-connector</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <url></url>
     <packaging>pom</packaging>
 
     <repositories>
@@ -16,29 +15,6 @@
             <url>http://packages.confluent.io/maven/</url>
         </repository>
     </repositories>
-
-    <!--
-    <scm>
-        <connection>scm:git:git@github.com:stashBanco/connector-http-rabbit.git</connection>
-        <url>scm:git:git@github.com:DatioBD/MIKE.git</url>
-        <developerConnection>scm:git:git@github.com:stashBanco/connector-http-rabbit.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
-    -->
-    <!--
-    <distributionManagement>
-        <repository>
-            <id>releases</id>
-            <name>Releases</name>
-            <url>http://ec2-52-48-62-134.eu-west-1.compute.amazonaws.com:8081/nexus/content/repositories/releases</url>
-        </repository>
-        <snapshotRepository>
-            <id>snapshots</id>
-            <name>Snapshots</name>
-            <url>http://ec2-52-48-62-134.eu-west-1.compute.amazonaws.com:8081/nexus/content/repositories/snapshots</url>
-        </snapshotRepository>
-    </distributionManagement>
-    -->
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -96,27 +72,6 @@
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.databind.version}</version>
             </dependency>
-
-            <!-- Kafka -->
-            <dependency>
-                <groupId>org.apache.kafka</groupId>
-                <artifactId>kafka-clients</artifactId>
-                <version>${kafka.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.kafka</groupId>
-                <artifactId>kafka_${scala.compat.version}</artifactId>
-                <version>${kafka.version}</version>
-                <classifier>test</classifier>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.kafka</groupId>
-                <artifactId>kafka_${scala.compat.version}</artifactId>
-                <version>${kafka.version}</version>
-                <scope>test</scope>
-            </dependency>
-
 
             <!-- AKKA -->
             <dependency>
@@ -197,58 +152,15 @@
     </dependencyManagement>
 
     <build>
+        <sourceDirectory>src/main/scala</sourceDirectory>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>${build.helper.maven.version}</version>
-                <executions>
-                    <!-- Add a new source directory to our build -->
-                    <execution>
-                        <id>add-integration-test-sources</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>add-test-source</goal>
-                        </goals>
-                        <configuration>
-                            <!-- Configures the source directory of our integration tests -->
-                            <sources>
-                                <source>src/integration-test/java</source>
-                                <source>src/integration-test/scala</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                    <!-- Add a new resource directory to our build -->
-                    <execution>
-                        <id>add-integration-test-resources</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>add-test-resource</goal>
-                        </goals>
-                        <configuration>
-                            <!-- Configures the resource directory of our integration tests -->
-                            <resources>
-                                <!--
-                                    Placeholders that are found from the files located in the configured resource
-                                    directories are replaced with the property values found from the profile
-                                    specific configuration file.
-                                -->
-                                <resource>
-                                    <filtering>true</filtering>
-                                    <directory>src/integration-test/resources</directory>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.18</version>
                 <configuration>
                     <!-- Skips unit tests if the value of skip.unit.tests property is true -->
-                    <skipTests>${skip.unit.tests}</skipTests>
+                    <skipTests>true</skipTests>
                     <argLine>-Duser.language=es -Duser.region=ES</argLine>
                     <!-- Excludes integration tests when unit tests are run -->
                     <excludes>
@@ -258,31 +170,6 @@
                         <exclude>**/*IT.scala</exclude>
                     </excludes>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.18</version>
-                <executions>
-                    <!--
-                        Invokes both the integration-test and the verify goals of the
-                        Failsafe Maven plugin
-                    -->
-                    <execution>
-                        <id>integration-tests</id>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                        <configuration>
-                            <!--
-                                Skips integration tests if the value of skip.integration.tests
-                                property is true
-                            -->
-                            <skipTests>${skip.integration.tests}</skipTests>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>
@@ -385,7 +272,7 @@
                     <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
                     <junitxml>.</junitxml>
                     <filereports>WDF TestSuite.txt</filereports>
-                    <skipTests>${skip.integration.tests}</skipTests>
+                    <skipTests>true</skipTests>
                 </configuration>
                 <executions>
                     <execution>
@@ -472,7 +359,7 @@
                 Ensures that the config.properties file is always loaded from the
                 configuration directory of the active Maven profile. 
             -->
-            <filter>${user.dir}/profiles/${build.profile.id}/config.properties</filter>
+            <filter>${user.dir}/profiles/local/config.properties</filter>
         </filters>
         <resources>
             <!--
