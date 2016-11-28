@@ -45,7 +45,7 @@
     </properties>
 
 
-    <dependencyManagement>
+
         <dependencies>
             <dependency>
                 <groupId>org.scala-lang</groupId>
@@ -149,7 +149,7 @@
 
 
         </dependencies>
-    </dependencyManagement>
+
 
     <build>
         <sourceDirectory>src/main/scala</sourceDirectory>

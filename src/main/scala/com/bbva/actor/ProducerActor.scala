@@ -2,6 +2,11 @@ package com.bbva.actor
 
 import java.util.Properties
 
+import akka.actor.Actor
+import com.bbva.service.{SyncMessage, Message}
+import com.typesafe.config.ConfigFactory
+import org.slf4j.LoggerFactory
+
 class ProducerActor extends Actor {
 
   val config = ConfigFactory.load()
