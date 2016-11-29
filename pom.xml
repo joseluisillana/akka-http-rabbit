@@ -33,6 +33,8 @@
         <jackson.scala.module.version>2.6.2</jackson.scala.module.version>
         <build.helper.maven.version>1.9.1</build.helper.maven.version>
         <javaversion>1.8</javaversion>
+        <rabbitamqp.version>3.6.1</rabbitamqp.version>
+        <rabbitamqp.scala.version>1.5</rabbitamqp.scala.version>
     </properties>
         <dependencies>
 
@@ -44,17 +46,19 @@
                 <version>${typesafe.config.version}</version>
             </dependency>
 
-            <!-- SCALA -->
+            <!-- RABBIT MQ -->
             <dependency>
                 <groupId>com.rabbitmq</groupId>
                 <artifactId>amqp-client</artifactId>
-                <version>3.6.1</version>
+                <version>${rabbitamqp.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.github.sstone</groupId>
                 <artifactId>amqp-client_${scala.compat.version}</artifactId>
-                <version>1.5</version>
+                <version>${rabbitamqp.scala.version}</version>
             </dependency>
+
+            <!-- SCALA -->
             <dependency>
                 <groupId>org.scala-lang</groupId>
                 <artifactId>scala-library</artifactId>
