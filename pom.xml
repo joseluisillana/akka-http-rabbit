@@ -48,6 +48,16 @@
 
         <dependencies>
             <dependency>
+                <groupId>com.rabbitmq</groupId>
+                <artifactId>amqp-client</artifactId>
+                <version>3.6.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.sstone</groupId>
+                <artifactId>amqp-client_${scala.compat.version}</artifactId>
+                <version>1.5</version>
+            </dependency>
+            <dependency>
                 <groupId>org.scala-lang</groupId>
                 <artifactId>scala-library</artifactId>
                 <version>${scala.version}</version>

@@ -2,7 +2,7 @@ package com.bbva.service
 
 import java.util.Optional
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
@@ -14,6 +14,7 @@ import ch.megard.akka.http.cors.CorsDirectives._
 import ch.megard.akka.http.cors.{CorsDirectives, CorsSettings}
 import com.bbva.actor.ProducerActor
 import com.bbva.model.{BulkLog, BulkResponse, IdElement, LogResponse}
+import com.bbva.actor.{ProducerActor, ProducerActorRabbit}
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 
@@ -34,10 +35,22 @@ case class SyncMessage(topic: String, id: String, message: String)
 case class DataService(system: ActorSystem)(implicit val config: Config) {
 
   implicit val timeout = Timeout(5 seconds)
+  val actortype = config.getString("akka.actortype")
 
-  val router = system.actorOf(FromConfig.props(Props[ProducerActor]), "mainRouter")
+  def getKafkaRouter(): ActorRef ={
+    system.actorOf(FromConfig.props(Props[ProducerActor]), "mainRouter")
+  }
+
+  def getRabbitRouter(): ActorRef ={
+    system.actorOf(FromConfig.props(Props[ProducerActorRabbit]), "rabbitRouter")
+  }
+
+  val router = if(actortype=="rabbit") getRabbitRouter else getKafkaRouter
 
   val settings = CorsSettings.defaultSettings.copy(allowGenericHttpRequests = false)
+
+
+
 
   val route: Route = handleRejections(CorsDirectives.corsRejectionHandler) {
     pathPrefix("mike") {
@@ -131,7 +144,7 @@ case class DataService(system: ActorSystem)(implicit val config: Config) {
   }
 
   def getTopicName(source: String): String = {
-    "default"
+    "test"
   }
 
   def sendLogToProducer(source: String, event: String) = {
