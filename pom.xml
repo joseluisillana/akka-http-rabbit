@@ -159,14 +159,6 @@
         </dependency>
 
         <!-- Third Parties -->
-
-        <!-- ADD CORS SUPPORT TO AKKA HTTP -->
-        <!-- https://mvnrepository.com/artifact/ch.megard/akka-http-cors_2.11 -->
-        <dependency>
-            <groupId>ch.megard</groupId>
-            <artifactId>akka-http-cors_${scala.compat.version}</artifactId>
-            <version>${akka.http.cors.version}</version>
-        </dependency>
     </dependencies>
 
 

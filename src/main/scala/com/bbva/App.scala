@@ -26,25 +26,19 @@ object App extends scala.App {
   val actortype = config.getString("akka.actortype")
   val logger = Logging(system, getClass)
 
-  val producer:ActorRef = if(actortype=="rabbit"){
-    val connFactory = new ConnectionFactory()
-    val user = config.getString("akka.rabbituser")
-    val pass = config.getString("akka.rabbitpass")
-    connFactory.setUri(s"amqp://$user:$pass@localhost")
-    val conn = system.actorOf(ConnectionOwner.props(connFactory, 1 second))
-    ConnectionOwner.createChildActor(conn, ChannelOwner.props())
-  }else{
-    null
-  }
-
-  def getRabbitProducer = {
-    producer
-  }
-
-
-
   Http().bindAndHandle(
-    Route.handlerFlow(DataService(system).route),
+    Route.handlerFlow(DataService(system, rabbitConnection).route),
     config.getString("http.interface"),
     config.getInt("http.port"))
+
+  implicit val rabbitConnection = createConnectionFactoryRabbit
+
+  def createConnectionFactoryRabbit: ConnectionFactory = {
+    val connFactory = new ConnectionFactory()
+    val user = config.getString("application.rabbitmq.user")
+    val pass = config.getString("application.rabbitmq.pass")
+    val rabbitserver = config.getString("application.rabbitmq.server")
+    connFactory.setUri(s"amqp://$user:$pass@$rabbitserver")
+    connFactory
+  }
 }
