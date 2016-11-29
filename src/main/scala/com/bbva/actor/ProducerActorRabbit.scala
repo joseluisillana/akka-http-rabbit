@@ -18,10 +18,18 @@ class ProducerActorRabbit extends Actor {
 
   override def receive: Receive = {
     case Message(topic, id, message) =>
-      producer ! Publish(topic, id, message.getBytes, properties = None, mandatory = true, immediate = false)
+      producer ! Publish(topic,
+                          id,
+                          message.getBytes,
+                          properties = None,
+                          mandatory = true,
+                          immediate = false)
     case SyncMessage(topic, id, message) =>
-      val response = producer ! Publish(topic, id, message.getBytes, properties = None, mandatory = true, immediate = false)
+      val response = producer ! Publish(topic,
+                                          id, message.getBytes,
+                                          properties = None,
+                                          mandatory = true,
+                                          immediate = false)
       logger.debug("response: " + response)
-
   }
 }
