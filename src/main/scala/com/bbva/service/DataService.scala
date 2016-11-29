@@ -38,7 +38,8 @@ case class DataService(system: ActorSystem, rabbitFactory: ConnectionFactory)
   }
 
   def getRabbitRouter(): ActorRef ={
-    system.actorOf(FromConfig.props(Props[ProducerActorRabbit]), "rabbitRouter")
+    system.actorOf(FromConfig.props(
+      Props(classOf[ProducerActorRabbit],rabbitFactory,system)), "rabbitRouter")
   }
 
   val router = if(actortype=="rabbit") getRabbitRouter else getKafkaRouter
@@ -73,7 +74,7 @@ case class DataService(system: ActorSystem, rabbitFactory: ConnectionFactory)
     }
 
   def getTopicName(source: String): String = {
-    config.getString("application.rabbit.exchange")
+    config.getString("application.rabbitmq.exchange")
   }
 
   def sendLogToProducer(source: String, event: String) = {

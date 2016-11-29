@@ -8,15 +8,9 @@ import com.github.sstone.amqp.{ChannelOwner, ConnectionOwner}
 import com.rabbitmq.client.ConnectionFactory
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
+import scala.concurrent.duration._
 
-object ProducerActorRabbit {
-
-  def apply(connFactory: ConnectionFactory, system: ActorSystem): ProducerActorRabbit =
-    new ProducerActorRabbit(connFactory, system)
-
-}
-
-class ProducerActorRabbit(connFactory: ConnectionFactory) extends Actor {
+class ProducerActorRabbit(connFactory: ConnectionFactory, system: ActorSystem) extends Actor {
 
   val config = ConfigFactory.load()
 

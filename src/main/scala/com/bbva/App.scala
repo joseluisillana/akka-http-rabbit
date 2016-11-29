@@ -26,12 +26,14 @@ object App extends scala.App {
   val actortype = config.getString("akka.actortype")
   val logger = Logging(system, getClass)
 
+  implicit val rabbitConnection = createConnectionFactoryRabbit
+
   Http().bindAndHandle(
     Route.handlerFlow(DataService(system, rabbitConnection).route),
     config.getString("http.interface"),
     config.getInt("http.port"))
 
-  implicit val rabbitConnection = createConnectionFactoryRabbit
+
 
   def createConnectionFactoryRabbit: ConnectionFactory = {
     val connFactory = new ConnectionFactory()
