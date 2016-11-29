@@ -54,7 +54,8 @@ case class DataService(system: ActorSystem)(implicit val config: Config) {
               pathEndOrSingleSlash {
                 post {
                   entity(as[List[BulkLog]]) { events =>
-                    val uuids = events.map(event => sendLogToProducer(event.sourceSystem, event.message))
+                    val uuids = events.map(event =>
+                      sendLogToProducer(event.sourceSystem, event.message))
                     bulkResponse("structured-logs", uuids)
                   }
                 }
@@ -64,7 +65,8 @@ case class DataService(system: ActorSystem)(implicit val config: Config) {
                 pathEndOrSingleSlash {
                   post {
                     entity(as[List[BulkLog]]) { events =>
-                      val uuids = events.map(event => sendLogToProducer(event.sourceSystem, event.message))
+                      val uuids = events.map(event =>
+                        sendLogToProducer(event.sourceSystem, event.message))
                       bulkResponse("unstructured-logs", uuids)
                     }
                   }
