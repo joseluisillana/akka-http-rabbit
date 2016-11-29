@@ -36,16 +36,14 @@
         <rabbitamqp.version>3.6.1</rabbitamqp.version>
         <rabbitamqp.scala.version>1.5</rabbitamqp.scala.version>
     </properties>
+
     <repositories>
-        <repository>
-            <id>confluent</id>
-            <url>http://packages.confluent.io/maven/</url>
-        </repository>
         <repository>
             <id>sonatype snapshots</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
         </repository>
     </repositories>
+
     <dependencies>
         <!-- TYPESAFE CONFIG -->
         <!-- TO READ CONFIG AS JSON -->
