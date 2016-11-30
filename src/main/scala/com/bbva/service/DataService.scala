@@ -1,22 +1,18 @@
 package com.bbva.service
 
-import java.util.Optional
-
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{RejectionHandler, Route}
+import akka.http.scaladsl.server.Route
 import akka.pattern.ask
 import akka.routing.FromConfig
 import akka.util.Timeout
-import ch.megard.akka.http.cors.CorsDirectives._
-import ch.megard.akka.http.cors.{CorsDirectives, CorsSettings}
-import com.bbva.actor.ProducerActor
-import com.bbva.model.{BulkLog, BulkResponse, IdElement, LogResponse}
+import com.bbva.App
 import com.bbva.actor.{ProducerActor, ProducerActorRabbit}
+import com.bbva.model.{BulkLog, BulkResponse, IdElement, LogResponse}
+import com.rabbitmq.client.ConnectionFactory
 import com.typesafe.config.Config
-import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -32,7 +28,8 @@ case class Message(topic: String, id: String, message: String)
 
 case class SyncMessage(topic: String, id: String, message: String)
 
-case class DataService(system: ActorSystem)(implicit val config: Config) {
+case class DataService(system: ActorSystem, rabbitFactory: ConnectionFactory)
+                      (implicit val config: Config) {
 
   implicit val timeout = Timeout(5 seconds)
   val actortype = config.getString("akka.actortype")
@@ -42,111 +39,44 @@ case class DataService(system: ActorSystem)(implicit val config: Config) {
   }
 
   def getRabbitRouter(): ActorRef ={
-    system.actorOf(FromConfig.props(Props[ProducerActorRabbit]), "rabbitRouter")
+    system.actorOf(FromConfig.props(
+      Props(classOf[ProducerActorRabbit],rabbitFactory,system)), "rabbitRouter")
   }
 
   val router = if(actortype=="rabbit") getRabbitRouter else getKafkaRouter
 
-  val settings = CorsSettings.defaultSettings.copy(allowGenericHttpRequests = false)
-
-
-
-
-  val route: Route = handleRejections(CorsDirectives.corsRejectionHandler) {
-    pathPrefix("mike") {
+  val route: Route =
+    pathPrefix("ingest") {
       path("healthCheck") {
         get {
+          App.paintCount
           complete(StatusCodes.OK)
         }
-      }
-    } ~
-      cors(settings) {
-        handleRejections(RejectionHandler.default) {
-          pathPrefix("mike") {
-            path("structured-logs") {
-              pathEndOrSingleSlash {
-                post {
-                  entity(as[List[BulkLog]]) { events =>
-                    val uuids = events.map(event =>
-                      sendLogToProducer(event.sourceSystem, event.message))
-                    bulkResponse("structured-logs", uuids)
-                  }
-                }
-              }
-            } ~
-              path("unstructured-logs") {
-                pathEndOrSingleSlash {
-                  post {
-                    entity(as[List[BulkLog]]) { events =>
-                      val uuids = events.map(event =>
-                        sendLogToProducer(event.sourceSystem, event.message))
-                      bulkResponse("unstructured-logs", uuids)
-                    }
-                  }
-                }
-              } ~
-              pathPrefix("structured-logs" / Segment) { source =>
-                pathEndOrSingleSlash {
-                  post {
-                    entity(as[String]) { event =>
-                      val uuid = sendLogToProducer(source, event)
-                      logResponse("structured-logs", uuid)
-                    }
-                  }
-                }
-              } ~
-              pathPrefix("unstructured-logs" / Segment) { source =>
-                pathEndOrSingleSlash {
-                  post {
-                    entity(as[String]) { event =>
-                      val uuid = sendLogToProducer(source, event)
-                      logResponse("unstructured-logs", uuid)
-                    }
-                  }
-                }
-              } ~
-              path("traceabilities") {
-                pathEndOrSingleSlash {
-                  post {
-                    entity(as[String]) { event =>
-                      sendTraceabilityToProducer(event)
-                    }
-                  }
-                }
-              }
-
+      } ~ path("bulk") {
+        pathEndOrSingleSlash {
+          post {
+            entity(as[List[BulkLog]]) { events =>
+              val uuids = events.map(event =>
+                sendLogToProducer(event.sourceSystem, event.message))
+              bulkResponse("bulk", uuids)
+            }
           }
         }
-      }
-  }
-
-  def sendTraceabilityToProducer(event: String) = {
-    val destTopic = getTraceabilityTopic
-    val newUUID = uuidGenerator
-    val future = (router ? SyncMessage(destTopic, newUUID, event)).mapTo[Boolean]
-    val result = Await.result(future, 5 seconds)
-
-    val headers = List(
-      RawHeader("Location", s"/mike/traceabilities/$newUUID"),
-      RawHeader("Content-Location", s"/mike/traceabilities")
-    )
-    if (result) {
-      respondWithHeaders(headers) {
-        complete((StatusCodes.OK, LogResponse(IdElement(newUUID))))
-      }
-    } else {
-      respondWithHeaders(headers) {
-        complete((StatusCodes.InternalServerError))
-      }
+      } ~
+        pathPrefix("single") {
+          pathEndOrSingleSlash {
+            post {
+              entity(as[String]) { event =>
+                val uuid = sendLogToProducer("data", event)
+                logResponse("single", uuid)
+              }
+            }
+          }
+        }
     }
-  }
-
-  def getTraceabilityTopic:String={
-      "default"
-  }
 
   def getTopicName(source: String): String = {
-    "test"
+    config.getString("application.rabbitmq.exchange")
   }
 
   def sendLogToProducer(source: String, event: String) = {
@@ -157,7 +87,7 @@ case class DataService(system: ActorSystem)(implicit val config: Config) {
 
   def logResponse(path: String, newUUID: String) = {
     val headers = List(
-      RawHeader("Content-Location", s"/mike/$path")
+      RawHeader("Content-Location", s"/ingest/$path")
     )
     respondWithHeaders(headers) {
       complete((StatusCodes.Accepted, LogResponse(IdElement(newUUID))))
@@ -166,7 +96,7 @@ case class DataService(system: ActorSystem)(implicit val config: Config) {
 
   def bulkResponse(path: String, newUUIDs: List[String]) = {
     val headers = List(
-      RawHeader("Content-Location", s"/mike/$path")
+      RawHeader("Content-Location", s"/ingest/$path")
     )
     respondWithHeaders(headers) {
       complete((StatusCodes.Accepted, BulkResponse(newUUIDs.map(IdElement(_)))))

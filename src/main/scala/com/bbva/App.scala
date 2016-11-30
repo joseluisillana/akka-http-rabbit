@@ -26,25 +26,39 @@ object App extends scala.App {
   val actortype = config.getString("akka.actortype")
   val logger = Logging(system, getClass)
 
-  val producer:ActorRef = if(actortype=="rabbit"){
-    val connFactory = new ConnectionFactory()
-    val user = config.getString("akka.rabbituser")
-    val pass = config.getString("akka.rabbitpass")
-    connFactory.setUri(s"amqp://$user:$pass@localhost")
-    val conn = system.actorOf(ConnectionOwner.props(connFactory, 1 second))
-    ConnectionOwner.createChildActor(conn, ChannelOwner.props())
-  }else{
-    null
-  }
-
-  def getRabbitProducer = {
-    producer
-  }
-
-
+  implicit val rabbitConnection = createConnectionFactoryRabbit
 
   Http().bindAndHandle(
-    Route.handlerFlow(DataService(system).route),
+    Route.handlerFlow(DataService(system, rabbitConnection).route),
     config.getString("http.interface"),
     config.getInt("http.port"))
+  var cont = 0
+  var contsend = 0
+  def sum(): Unit = {
+    this.synchronized {
+      cont = cont + 1
+    }
+
+  }
+
+  def sumsend(): Unit = {
+    this.synchronized {
+      contsend = contsend + 1
+    }
+  }
+
+  def paintCount(): Unit ={
+    logger.info(s"Number messages: $cont")
+    logger.info(s"Number messages: $contsend")
+  }
+
+
+  def createConnectionFactoryRabbit: ConnectionFactory = {
+    val connFactory = new ConnectionFactory()
+    val user = config.getString("application.rabbitmq.user")
+    val pass = config.getString("application.rabbitmq.pass")
+    val rabbitserver = config.getString("application.rabbitmq.server")
+    connFactory.setUri(s"amqp://$user:$pass@$rabbitserver")
+    connFactory
+  }
 }
