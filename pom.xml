@@ -7,7 +7,7 @@
     <groupId>com.bbva</groupId>
     <artifactId>http-input-api</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
+    <!--<packaging>jar</packaging>-->
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -33,7 +33,7 @@
         <jackson.scala.module.version>2.6.2</jackson.scala.module.version>
         <build.helper.maven.version>1.9.1</build.helper.maven.version>
         <javaversion>1.8</javaversion>
-        <rabbitamqp.version>3.6.1</rabbitamqp.version>
+        <rabbitamqp.version>4.0.0</rabbitamqp.version>
         <rabbitamqp.scala.version>1.5</rabbitamqp.scala.version>
     </properties>
 
@@ -59,11 +59,6 @@
             <artifactId>amqp-client</artifactId>
             <version>${rabbitamqp.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.sstone</groupId>
-            <artifactId>amqp-client_${scala.compat.version}</artifactId>
-            <version>${rabbitamqp.scala.version}</version>
-        </dependency>
 
         <!-- SCALA -->
         <dependency>
@@ -82,6 +77,11 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-slf4j_${scala.compat.version}</artifactId>
+            <version>${akka.version}</version>
         </dependency>
 
         <!-- JSON PARSERS -->
@@ -255,31 +255,30 @@
                 </executions>
             </plugin>
 
-
             <!--
-               The Assembly Plugin for Maven is primarily intended to allow users to aggregate
-               the project output along with its dependencies, modules, site documentation,
-               and other files into a single distributable archive.
+                          The Assembly Plugin for Maven is primarily intended to allow users to aggregate
+                          the project output along with its dependencies, modules, site documentation,
+                          and other files into a single distributable archive.
 
-               Your project can build distribution "assemblies" easily, using one of the convenient,
-               prefabricated assembly descriptors.
+                          Your project can build distribution "assemblies" easily, using one of the convenient,
+                          prefabricated assembly descriptors.
 
-               These descriptors handle many common operations, such as packaging a project's artifact
-               along with generated documentation into a single zip archive.
+                          These descriptors handle many common operations, such as packaging a project's artifact
+                          along with generated documentation into a single zip archive.
 
-               Alternatively, your project can provide its own descriptor and assume a much higher level
-               of control over how dependencies, modules, file-sets, and individual files
-               are packaged in the assembly.
+                          Alternatively, your project can provide its own descriptor and assume a much higher level
+                          of control over how dependencies, modules, file-sets, and individual files
+                          are packaged in the assembly.
 
-               Currently it can create distributions in the following formats:
-                 zip
-                 tar
-                 tar.gz (or tgz)
-                 tar.bz2 (or tbz2)
-                 jar
-                 dir
-                 war
-            -->
+                          Currently it can create distributions in the following formats:
+                            zip
+                            tar
+                            tar.gz (or tgz)
+                            tar.bz2 (or tbz2)
+                            jar
+                            dir
+                            war
+                       -->
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.2.1</version>
@@ -300,35 +299,26 @@
                 </executions>
             </plugin>
 
-            <!--
-              This plugin provides the ability to run Ant tasks from within Maven.
-              You can even embed your Ant scripts in the POM!
-            -->
-            <!--
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.6</version>
-
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.4.1</version>
                 <executions>
                     <execution>
-                        <id>patch.executable</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>run</goal>
+                            <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <target>
-                                <exec executable="chmod" dir="${project.build.directory}/appassembler/bin">
-                                    <arg value="a+x"/>
-                                    <arg value="App"/>
-                                </exec>
-                            </target>
+                            <dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>reference.conf</resource>
+                                </transformer>
+                            </transformers>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-            -->
 
             <!-- Enable scalatest -->
             <!--
@@ -440,7 +430,7 @@
                 Ensures that the config.properties file is always loaded from the
                 configuration directory of the active Maven profile. 
             -->
-            <filter>${user.dir}/profiles/local/config.properties</filter>
+            <filter>${user.dir}/profiles/${build.profile.id}/config.properties</filter>
         </filters>
         <resources>
             <!--
@@ -457,7 +447,7 @@
 
 
     <profiles>
-        <!-- The Configuration of the development profile -->
+        <!-- The Configuration of the local development profile -->
         <profile>
             <id>local</id>
             <activation>
@@ -472,6 +462,29 @@
                     property to dev.
                 -->
                 <build.profile.id>local</build.profile.id>
+                <!--
+                    Only unit tests are run when the development profile is active
+                -->
+                <skip.integration.tests>true</skip.integration.tests>
+                <skip.unit.tests>false</skip.unit.tests>
+                <tag.scala.test.exclude>test.int</tag.scala.test.exclude>
+            </properties>
+        </profile>
+        <!-- The Configuration of the development profile -->
+        <profile>
+            <id>develop</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <!--
+                    Specifies the build.profile.id property that must be equal than the name of
+                    the directory that contains the profile specific configuration file.
+                    Because the name of the directory that contains the configuration file of the
+                    development profile is dev, we must set the value of the build.profile.id
+                    property to dev.
+                -->
+                <build.profile.id>develop</build.profile.id>
                 <!--
                     Only unit tests are run when the development profile is active
                 -->

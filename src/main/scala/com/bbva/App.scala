@@ -7,7 +7,6 @@ import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.bbva.service.DataService
-import com.github.sstone.amqp.{ChannelOwner, ConnectionOwner}
 import com.rabbitmq.client.ConnectionFactory
 import com.typesafe.config.ConfigFactory
 
@@ -32,33 +31,56 @@ object App extends scala.App {
     Route.handlerFlow(DataService(system, rabbitConnection).route),
     config.getString("http.interface"),
     config.getInt("http.port"))
-  var cont = 0
-  var contsend = 0
-  def sum(): Unit = {
-    this.synchronized {
-      cont = cont + 1
-    }
-
-  }
-
-  def sumsend(): Unit = {
-    this.synchronized {
-      contsend = contsend + 1
-    }
-  }
-
-  def paintCount(): Unit ={
-    logger.info(s"Number messages: $cont")
-    logger.info(s"Number messages: $contsend")
-  }
 
 
+  /**
+    * Method to create a connectionFactory of rabbit with specific
+    * initialization parameters.
+    * @return
+    */
   def createConnectionFactoryRabbit: ConnectionFactory = {
     val connFactory = new ConnectionFactory()
     val user = config.getString("application.rabbitmq.user")
     val pass = config.getString("application.rabbitmq.pass")
     val rabbitserver = config.getString("application.rabbitmq.server")
-    connFactory.setUri(s"amqp://$user:$pass@$rabbitserver")
+    val rabbitport = config.getString("application.rabbitmq.server")
+    connFactory.setUri(s"amqp://$user:$pass@$rabbitserver:$rabbitport")
+    connFactory.setAutomaticRecoveryEnabled(true)
+    connFactory.setConnectionTimeout(
+      config.getInt("application.rabbitmq.connectionTimeOutValue"))
+    connFactory.setNetworkRecoveryInterval(
+      config.getInt("application.rabbitmq.networkRecoveryIntervalValue"))
+    connFactory.setRequestedHeartbeat(
+      config.getInt("application.rabbitmq.requestHeartBeatValue"))
     connFactory
+  }
+
+  /**
+    * Object to obtain stats from the input api on first dates
+    */
+  object Stats{
+    // Number request messages
+    var contsend:Long = 0
+    // Number send messages to rabbit
+    var contrequest:Long = 0
+
+    def sumRequest(): Unit = {
+      this.synchronized {
+        contrequest = contrequest + 1
+      }
+    }
+
+
+    def sumSend(): Unit = {
+      this.synchronized {
+        contsend = contsend + 1
+      }
+    }
+
+    def paintCount(): Unit ={
+      logger.info(s"Number request messages: $contrequest")
+      logger.info(s"Number send messages to rabbit: $contsend")
+    }
+
   }
 }
